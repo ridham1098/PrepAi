@@ -4,6 +4,53 @@ import { useApp } from '../context/AppContext.jsx';
 import { DEMO_QUESTIONS } from '../data/demoData.js';
 import { generateQuestionsAI } from '../data/aiService.js';
 import { exportQuestionsAsPDF } from '../utils/pdfExport.js';
+import * as pdfjsLib from 'pdfjs-dist';
+import mammoth from 'mammoth/mammoth.browser';
+
+pdfjsLib.GlobalWorkerOptions.workerSrc = `${process.env.PUBLIC_URL}/pdf.worker.min.mjs`;
+
+// Master list of skills jo detect karni hain — apni marzi se expand kar sakta hai
+const SKILL_KEYWORDS = [
+  'React.js', 'React', 'Node.js', 'JavaScript', 'TypeScript', 'Python',
+  'Java', 'C++', 'MongoDB', 'MySQL', 'PostgreSQL', 'Firebase',
+  'REST APIs', 'GraphQL', 'Git', 'Docker', 'AWS', 'HTML', 'CSS',
+  'Tailwind', 'Redux', 'Express.js', 'Next.js', 'Vue.js', 'Angular'
+];
+
+// Actual text se skills detect karne wala function
+function detectSkillsFromText(text) {
+  const lowerText = text.toLowerCase();
+
+  const found = SKILL_KEYWORDS.filter((skill) => {
+    // Escape special regex chars (jaise C++ mein ++ hai)
+    const escaped = skill.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // Word boundary use karo taaki "java" "javascript" ke andar match na ho
+    const regex = new RegExp(`\\b${escaped}\\b`, 'i');
+    return regex.test(lowerText);
+  });
+
+  return [...new Set(found)];
+}
+
+// PDF se text extract karna
+async function extractTextFromPDF(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  let fullText = '';
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    fullText += content.items.map((item) => item.str).join(' ') + '\n';
+  }
+  return fullText;
+}
+
+// DOCX se text extract karna
+async function extractTextFromDocx(file) {
+  const arrayBuffer = await file.arrayBuffer();
+  const result = await mammoth.extractRawText({ arrayBuffer });
+  return result.value;
+}
 
 const TYPE_CLASS = { Technical: 'qt-tech', HR: 'qt-hr', 'System Design': 'qt-sd' };
 const TYPE_FILTERS = ['All', 'Technical', 'HR', 'System Design'];
@@ -38,15 +85,16 @@ export default function Resume() {
   const navigate = useNavigate();
   const { apiKey, provider, demoMode, setPracticeQuestion } = useApp();
 
-  const [fileName, setFileName]   = useState('');
-  const [skills, setSkills]       = useState([]);
-  const [profile, setProfile]     = useState('');
+  const [fileName, setFileName] = useState('');
+  const [skills, setSkills] = useState([]);
+  const [profile, setProfile] = useState('');
   const [questions, setQuestions] = useState([]);
-  const [loading, setLoading]     = useState(false);
-  const [dragOver, setDragOver]   = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
+  const [resumeLoaded, setResumeLoaded] = useState(false); // ✅ ab component ke andar hai
 
   // ── Search / Filter state ──
-  const [search, setSearch]       = useState('');
+  const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('All');
 
   const handlePractice = (q) => {
@@ -54,19 +102,40 @@ export default function Resume() {
     navigate('/interview');
   };
 
-  const processFile = (file) => {
+  const processFile = async (file) => {
     setFileName(file.name);
-    const defaultSkills = ['React.js','Node.js','JavaScript','Python','MongoDB','REST APIs','Git','HTML/CSS'];
-    setSkills(defaultSkills);
-    if (file.type === 'text/plain') {
-      const reader = new FileReader();
-      reader.onload = (e) => setProfile(e.target.result.substring(0, 500));
-      reader.readAsText(file);
+    setSkills([]);
+    setProfile('');
+    setResumeLoaded(false);
+
+    try {
+      let extractedText = '';
+
+      if (file.type === 'application/pdf') {
+        extractedText = await extractTextFromPDF(file);
+      } else if (
+        file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+        file.name.endsWith('.docx')
+      ) {
+        extractedText = await extractTextFromDocx(file);
+      } else if (file.type === 'text/plain') {
+        extractedText = await file.text();
+      } else {
+        alert('Sirf PDF, DOCX ya TXT files supported hain!');
+        return;
+      }
+
+      const detectedSkills = detectSkillsFromText(extractedText);
+      setSkills(detectedSkills.length > 0 ? detectedSkills : ['No matching skills detected']);
+      setResumeLoaded(true);
+    } catch (err) {
+      console.error('File parsing error:', err);
+      alert('Resume parse karne mein error aayi. Dobara try karo.');
     }
   };
 
-  const handleFile = (e) => { if (e.target.files[0]) processFile(e.target.files[0]); };
-  const handleDrop = (e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]); };
+  const handleFile = async (e) => { if (e.target.files[0]) await processFile(e.target.files[0]); };
+  const handleDrop = async (e) => { e.preventDefault(); setDragOver(false); if (e.dataTransfer.files[0]) await processFile(e.dataTransfer.files[0]); };
 
   const generate = async () => {
     if (!profile.trim()) { alert('Please describe your background first!'); return; }
