@@ -48,7 +48,7 @@ export function evaluateAnswer(text, interviewType) {
       correctness: randInt(5, 22),
       clarity: randInt(10, 25),
       depth: randInt(0, 15),
-      tip: 'Yeh answer evaluate karne ke liye bahut chota hai — apna approach step-by-step explain karo, examples ke saath.',
+      tip: 'This answer is too brief to evaluate—explain your approach step-by-step, with examples..',
     };
   }
 
@@ -71,13 +71,13 @@ export function evaluateAnswer(text, interviewType) {
   const avg = (correctness + clarity + depth) / 3;
   let tip;
   if (avg < 35) {
-    tip = 'Apna answer thoda aur detailed banao — step by step approach explain karo.';
+    tip = 'Make your answer a bit more detailed—explain the step-by-step approach..';
   } else if (avg < 60) {
-    tip = 'Achi shuruaat! Specific examples ya complexity/trade-offs mention karke answer strong karo.';
+    tip = 'Good start! Strengthen your answer by mentioning specific examples or complexities/trade-offs..';
   } else if (avg < 80) {
-    tip = 'Achha answer! Edge cases ya alternative approaches mention karoge to aur impressive lagega.';
+    tip = 'Good answer! It would look even more impressive if you mentioned edge cases or alternative approaches.';
   } else {
-    tip = 'Excellent! Tumhara answer detailed aur well-structured hai. Yehi level maintain rakho.';
+    tip = 'Excellent! Your answer is detailed and well-structured. Keep up this level..';
   }
 
   return { correctness, clarity, depth, tip };

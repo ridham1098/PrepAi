@@ -512,7 +512,7 @@ export default function Interview() {
                 </div>
               )}
               {!codeTested && runOutput?.type !== 'error' && !runOutput && (
-                <div className="code-editor-hint">Code run karo pehle — agar error aaya to fix karke dobara test karo, tabhi Submit enable hoga.</div>
+                <div className="code-editor-hint">Run the code first—if an error occurs, fix it and test again; only then will the submit option be enabled..</div>
               )}
             </div>
           )}

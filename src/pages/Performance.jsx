@@ -67,7 +67,7 @@ export default function Performance() {
     return counts;
   }, [history, hasHistory]);
 
-  // ── Activity Heatmap — real session density, last 35 days ──
+ 
   const heatmapData = useMemo(() => {
     if (!hasHistory) return HEATMAP_DATA;
     const days = 35;
@@ -89,8 +89,8 @@ export default function Performance() {
     <div className="performance fade-in">
       {!hasHistory && (
         <div className="filter-empty">
-          📊 Yeh demo data hai — koi real interview history nahi mili abhi. Mock Interview complete karke
-          "🏁 End Session &amp; Save" dabao — phir yeh charts tumhare real performance se update ho jaayenge.
+          📊 This is demo data—no real interview history found yet. Complete a mock interview and
+press "🏁 End Session & Save"—then these charts will update based on your actual performance.
         </div>
       )}
 

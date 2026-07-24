@@ -89,9 +89,8 @@ export default function History() {
       {history.length === 0 ? (
         <div className="history__empty">
           <div className="history__empty-icon">📭</div>
-          Koi interview session save nahi hui abhi tak.<br />
-          Mock Interview complete karke "End Session & Save" dabao — progress yahan track hoga.
-          <div style={{ marginTop: 16 }}>
+          No interview session has been saved yet..<br />
+After completing the mock interview, press "End Session & Save" — your progress will be tracked here.          <div style={{ marginTop: 16 }}>
             <button className="end-session-btn" onClick={() => navigate('/interview')}>
               Start an Interview →
             </button>
